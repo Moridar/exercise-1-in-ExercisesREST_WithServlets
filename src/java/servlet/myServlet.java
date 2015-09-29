@@ -7,10 +7,13 @@ package servlet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.Scanner;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -41,13 +44,6 @@ public class myServlet extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    void doPut() {
-    }
-
-    void doDelete() {
-
-    }
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -57,7 +53,12 @@ public class myServlet extends HttpServlet {
             parameter = parts[4];
         }
         JsonObject quote = new JsonObject();
-        int key = Integer.parseInt(parameter); //Get the second quote
+        int key;
+        try {
+            key = Integer.parseInt(parameter); //Get the second quote
+        } catch (Exception e) {
+            key = new Random().nextInt(quotes.size()) + 1;
+        }
         quote.addProperty("quote", quotes.get(key));
         String jsonResponse = new Gson().toJson(quote);
         response.getWriter().print(jsonResponse);
@@ -74,7 +75,69 @@ public class myServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        Scanner jsonScanner = new Scanner(request.getInputStream());
+        String json = "";
+        while (jsonScanner.hasNext()) {
+            json += jsonScanner.nextLine();
+            System.out.println(json);
+        }
+//Get the quote text from the provided Json
+        JsonObject newQuote = new JsonParser().parse(json).getAsJsonObject();
+        String quote = newQuote.get("quote").getAsString();
+        quotes.put(quotes.size() + 1, quote);
+        response.getWriter().print("'id':" + quotes.size() + ",'quote': " + quote);
+    }
 
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String[] parts = request.getRequestURI().split("/");
+        String parameter = null;
+        if (parts.length == 5) {
+            parameter = parts[4];
+        }
+        int key;
+        try {
+            key = Integer.parseInt(parameter); //Get the second quote
+        } catch (Exception e) {
+            key = 0;
+        }
+
+        Scanner jsonScanner = new Scanner(request.getInputStream());
+        String json = "";
+        while (jsonScanner.hasNext()) {
+            json += jsonScanner.nextLine();
+            System.out.println(json);
+        }
+//Get the quote text from the provided Json
+        JsonObject newQuote = new JsonParser().parse(json).getAsJsonObject();
+        String quote = newQuote.get("quote").getAsString();
+        if (quotes.containsKey(key)) {
+            quotes.put(key, quote);
+            response.getWriter().print("'id':" + key + ",'quote': " + quote);
+        } else {
+            response.getWriter().print("'id' is not used and can not be replaced - use post instead to create new quote");
+        }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String[] parts = request.getRequestURI().split("/");
+        String parameter = null;
+        if (parts.length == 5) {
+            parameter = parts[4];
+        }
+        JsonObject quote = new JsonObject();
+        int key;
+        try {
+            key = Integer.parseInt(parameter); //Get the second quote
+        } catch (Exception e) {
+            key = 0;
+        }
+        quote.addProperty("quote", quotes.remove(key));
+        String jsonResponse = new Gson().toJson(quote);
+        response.getWriter().print(jsonResponse);
     }
 
     /**
